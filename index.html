@@ -1,235 +1,670 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FeedTok</title>
-<style>
-  :root {
-    --bg: #000;
-    --fg: #fff;
-    --muted: rgba(255,255,255,.72);
-    --glass: rgba(0,0,0,.35);
-    --accent: #fe2c55;
-    --accent2: #25f4ee;
-    --sheet: #121212;
-    --sheet-fg: #eee;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FeedTok</title>
+  <style>
+    :root {
+      --bg: #000;
+      --fg: #fff;
+      --muted: rgba(255, 255, 255, .72);
+      --glass: rgba(0, 0, 0, .35);
+      --accent: #fe2c55;
+      --accent2: #25f4ee;
+      --sheet: #121212;
+      --sheet-fg: #eee;
+      /* phone-shaped 9:16 column on wide screens, full width on phones */
+      --col: min(100vw, max(420px, calc(100dvh * 9 / 16)));
+    }
 
-  /* top bar */
-  .top { position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; gap: 8px;
-    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
-    background: linear-gradient(rgba(0,0,0,.6), transparent); }
-  .brand { font-weight: 800; letter-spacing: -.5px; font-size: 18px; white-space: nowrap;
-    text-shadow: -1.5px 0 var(--accent2), 1.5px 0 var(--accent); }
-  .feedform { flex: 1; display: flex; gap: 6px; min-width: 0; }
-  .feedform input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25);
-    background: rgba(255,255,255,.1); color: var(--fg); font-size: 14px; outline: none; }
-  .feedform input:focus { border-color: var(--accent2); }
-  .feedform button { padding: 8px 14px; border-radius: 999px; background: var(--accent); font-weight: 600; font-size: 14px; }
+    * {
+      box-sizing: border-box;
+    }
 
-  /* feed */
-  #feed { height: 100dvh; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; }
-  #feed::-webkit-scrollbar { display: none; }
-  .card { position: relative; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
-    overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
-  .card .bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
-  .card .bg.img { filter: brightness(.55) saturate(1.1); transform: scale(1.05); }
-  .card .bg::after { content: ""; position: absolute; inset: 0;
-    background: linear-gradient(transparent 30%, rgba(0,0,0,.85)); }
-  .card .bigtitle { position: absolute; inset: 90px 76px auto 20px; font-size: clamp(28px, 6vw, 56px);
-    font-weight: 900; line-height: 1.05; letter-spacing: -1px; opacity: .14; pointer-events: none;
-    overflow: hidden; max-height: 55%; word-break: break-word; }
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(ellipse at 50% 0%, #1c1c24, var(--bg) 70%) var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
 
-  .info { position: relative; z-index: 2; padding: 0 84px max(24px, env(safe-area-inset-bottom)) 16px; max-width: 760px; }
-  .author { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: 700; }
-  .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800;
-    border: 2px solid #fff; flex-shrink: 0; font-size: 16px; }
-  .author small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
-  .title { font-size: clamp(20px, 3.4vw, 28px); font-weight: 800; line-height: 1.2; margin: 0 0 8px; }
-  .excerpt { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 0;
-    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-  .more { margin-top: 10px; font-weight: 700; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
-  .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .tags span { font-size: 13px; font-weight: 600; }
+    button {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: 0;
+      cursor: pointer;
+    }
 
-  /* side actions */
-  .actions { position: absolute; right: 10px; bottom: max(30px, env(safe-area-inset-bottom)); z-index: 3;
-    display: flex; flex-direction: column; gap: 18px; align-items: center; }
-  .act { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
-  .act .ic { width: 48px; height: 48px; border-radius: 50%; background: var(--glass); display: grid; place-items: center;
-    backdrop-filter: blur(6px); transition: transform .15s; }
-  .act:active .ic { transform: scale(.85); }
-  .act svg { width: 26px; height: 26px; fill: #fff; }
-  .act.liked svg { fill: var(--accent); }
-  .act.saved svg { fill: #ffc83d; }
+    /* top bar */
+    .top {
+      position: fixed;
+      inset: 0 0 auto 0;
+      width: var(--col);
+      margin: 0 auto;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+      background: linear-gradient(rgba(0, 0, 0, .6), transparent);
+    }
 
-  .heart-pop { position: absolute; z-index: 5; pointer-events: none; width: 110px; height: 110px; fill: var(--accent);
-    transform: translate(-50%, -50%) scale(0); animation: pop .8s ease-out forwards; }
-  @keyframes pop { 15% { transform: translate(-50%,-50%) scale(1.2) rotate(-8deg); opacity: 1; }
-    30% { transform: translate(-50%,-50%) scale(1) rotate(-8deg); }
-    100% { transform: translate(-50%,-160%) scale(1.1) rotate(-8deg); opacity: 0; } }
+    .brand {
+      font-weight: 800;
+      letter-spacing: -.5px;
+      font-size: 18px;
+      white-space: nowrap;
+      text-shadow: -1.5px 0 var(--accent2), 1.5px 0 var(--accent);
+    }
 
-  /* reader sheet */
-  .sheet-wrap { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .25s; }
-  .sheet-wrap.open { opacity: 1; pointer-events: auto; }
-  .sheet { position: absolute; left: 50%; bottom: 0; width: min(760px, 100%); height: 88dvh; background: var(--sheet); color: var(--sheet-fg);
-    border-radius: 16px 16px 0 0; transform: translate(-50%, 100%); transition: transform .3s cubic-bezier(.2,.8,.2,1);
-    display: flex; flex-direction: column; }
-  .sheet-wrap.open .sheet { transform: translate(-50%, 0); }
-  .sheet header { padding: 10px 16px 12px; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; gap: 10px; }
-  .sheet header::before { content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: #444; }
-  .sheet header h2 { flex: 1; margin: 6px 0 0; font-size: 16px; line-height: 1.3; }
-  .sheet header a, .sheet header button { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 999px; background: #2a2a2a; color: #fff; text-decoration: none; white-space: nowrap; margin-top: 6px; }
-  .sheet .body { overflow-y: auto; padding: 16px 20px 40px; line-height: 1.7; font-size: 17px; }
-  .sheet .body img, .sheet .body video, .sheet .body iframe { max-width: 100%; height: auto; border-radius: 8px; }
-  .sheet .body a { color: var(--accent2); }
-  .sheet .body pre { overflow-x: auto; background: #1d1d1d; padding: 12px; border-radius: 8px; font-size: 14px; }
-  .sheet .body blockquote { margin: 0; padding-left: 14px; border-left: 3px solid var(--accent); color: #bbb; }
+    .feedform {
+      flex: 1;
+      display: flex;
+      gap: 6px;
+      min-width: 0;
+    }
 
-  /* states */
-  .state { height: 100dvh; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--muted); }
-  .spinner { width: 42px; height: 42px; margin: 0 auto 14px; border-radius: 50%; border: 3px solid rgba(255,255,255,.15);
-    border-top-color: var(--accent); border-right-color: var(--accent2); animation: spin .8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .state button { margin-top: 14px; padding: 9px 18px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; }
+    .feedform input {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .25);
+      background: rgba(255, 255, 255, .1);
+      color: var(--fg);
+      font-size: 14px;
+      outline: none;
+    }
 
-  .progress { position: fixed; right: 4px; top: 50%; transform: translateY(-50%); z-index: 15; display: flex; flex-direction: column; gap: 4px; }
-  .progress i { width: 3px; height: 14px; border-radius: 2px; background: rgba(255,255,255,.25); transition: background .2s, height .2s; }
-  .progress i.on { background: #fff; height: 24px; }
+    .feedform input:focus {
+      border-color: var(--accent2);
+    }
 
-  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px); z-index: 60; background: rgba(40,40,40,.95);
-    padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .feedform button {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--accent);
+      font-weight: 600;
+      font-size: 14px;
+    }
 
-  .hint { position: fixed; left: 50%; bottom: 40%; transform: translateX(-50%); z-index: 12; pointer-events: none;
-    font-size: 14px; color: #fff; background: var(--glass); padding: 8px 14px; border-radius: 999px; animation: bob 1.4s ease-in-out 3, fade 0.4s 4.2s forwards; }
-  @keyframes bob { 50% { transform: translate(-50%, -10px); } }
-  @keyframes fade { to { opacity: 0; } }
+    /* feed */
+    #feed {
+      width: var(--col);
+      margin: 0 auto;
+      container-type: inline-size;
+      background: var(--bg);
+      box-shadow: 0 0 60px rgba(0, 0, 0, .8);
+      height: 100dvh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+    }
 
-  @media (max-width: 520px) {
-    .brand { display: none; }
-    .info { padding-right: 76px; }
-    .progress { display: none; }
-  }
-</style>
+    #feed::-webkit-scrollbar {
+      display: none;
+    }
+
+    .card {
+      position: relative;
+      height: 100dvh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .card .bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .card .bg.img {
+      filter: brightness(.55) saturate(1.1);
+      transform: scale(1.05);
+    }
+
+    .card .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(transparent 30%, rgba(0, 0, 0, .85));
+    }
+
+    .card .bigtitle {
+      position: absolute;
+      inset: 90px 76px auto 20px;
+      font-size: clamp(28px, 9cqi, 52px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -1px;
+      opacity: .14;
+      pointer-events: none;
+      overflow: hidden;
+      max-height: 55%;
+      word-break: break-word;
+    }
+
+    .info {
+      position: relative;
+      z-index: 2;
+      padding: 0 84px max(24px, env(safe-area-inset-bottom)) 16px;
+      max-width: 760px;
+    }
+
+    .author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      border: 2px solid #fff;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .author small {
+      display: block;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .title {
+      font-size: clamp(20px, 5.5cqi, 28px);
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0 0 8px;
+    }
+
+    .excerpt {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .more {
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tags {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tags span {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* side actions */
+    .actions {
+      position: absolute;
+      right: 10px;
+      bottom: max(30px, env(safe-area-inset-bottom));
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .act {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .act .ic {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--glass);
+      display: grid;
+      place-items: center;
+      backdrop-filter: blur(6px);
+      transition: transform .15s;
+    }
+
+    .act:active .ic {
+      transform: scale(.85);
+    }
+
+    .act svg {
+      width: 26px;
+      height: 26px;
+      fill: #fff;
+    }
+
+    .act.liked svg {
+      fill: var(--accent);
+    }
+
+    .act.saved svg {
+      fill: #ffc83d;
+    }
+
+    .heart-pop {
+      position: absolute;
+      z-index: 5;
+      pointer-events: none;
+      width: 110px;
+      height: 110px;
+      fill: var(--accent);
+      transform: translate(-50%, -50%) scale(0);
+      animation: pop .8s ease-out forwards;
+    }
+
+    @keyframes pop {
+      15% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(-8deg);
+        opacity: 1;
+      }
+
+      30% {
+        transform: translate(-50%, -50%) scale(1) rotate(-8deg);
+      }
+
+      100% {
+        transform: translate(-50%, -160%) scale(1.1) rotate(-8deg);
+        opacity: 0;
+      }
+    }
+
+    /* reader sheet */
+    .sheet-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, .5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+
+    .sheet-wrap.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: var(--col);
+      height: 88dvh;
+      background: var(--sheet);
+      color: var(--sheet-fg);
+      border-radius: 16px 16px 0 0;
+      transform: translate(-50%, 100%);
+      transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet-wrap.open .sheet {
+      transform: translate(-50%, 0);
+    }
+
+    .sheet header {
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sheet header::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      width: 40px;
+      height: 4px;
+      margin-left: -20px;
+      border-radius: 4px;
+      background: #444;
+    }
+
+    .sheet header h2 {
+      flex: 1;
+      margin: 6px 0 0;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .sheet header a,
+    .sheet header button {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #2a2a2a;
+      color: #fff;
+      text-decoration: none;
+      white-space: nowrap;
+      margin-top: 6px;
+    }
+
+    .sheet .body {
+      overflow-y: auto;
+      padding: 16px 20px 40px;
+      line-height: 1.7;
+      font-size: 17px;
+    }
+
+    .sheet .body img,
+    .sheet .body video,
+    .sheet .body iframe {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .sheet .body a {
+      color: var(--accent2);
+    }
+
+    .sheet .body pre {
+      overflow-x: auto;
+      background: #1d1d1d;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .sheet .body blockquote {
+      margin: 0;
+      padding-left: 14px;
+      border-left: 3px solid var(--accent);
+      color: #bbb;
+    }
+
+    /* states */
+    .state {
+      height: 100dvh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, .15);
+      border-top-color: var(--accent);
+      border-right-color: var(--accent2);
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .state button {
+      margin-top: 14px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .progress {
+      position: fixed;
+      right: max(4px, calc((100vw - var(--col)) / 2 - 14px));
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress i {
+      width: 3px;
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, .25);
+      transition: background .2s, height .2s;
+    }
+
+    .progress i.on {
+      background: #fff;
+      height: 24px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 90px;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 60;
+      background: rgba(40, 40, 40, .95);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      opacity: 0;
+      transition: .25s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 40%;
+      transform: translateX(-50%);
+      z-index: 12;
+      pointer-events: none;
+      font-size: 14px;
+      color: #fff;
+      background: var(--glass);
+      padding: 8px 14px;
+      border-radius: 999px;
+      animation: bob 1.4s ease-in-out 3, fade 0.4s 4.2s forwards;
+    }
+
+    @keyframes bob {
+      50% {
+        transform: translate(-50%, -10px);
+      }
+    }
+
+    @keyframes fade {
+      to {
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .brand {
+        display: none;
+      }
+
+      .info {
+        padding-right: 76px;
+      }
+
+      .progress {
+        display: none;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="top">
-  <div class="brand">FeedTok</div>
-  <form class="feedform" id="feedform">
-    <input id="feedurl" type="url" placeholder="Paste an RSS / Atom feed URL" required>
-    <button type="submit">Load</button>
-  </form>
-</div>
-
-<main id="feed"><div class="state"><div><div class="spinner"></div>Loading feed…</div></div></main>
-<div class="progress" id="progress"></div>
-
-<div class="sheet-wrap" id="sheetWrap">
-  <div class="sheet" role="dialog" aria-modal="true">
-    <header>
-      <h2 id="sheetTitle"></h2>
-      <a id="sheetLink" target="_blank" rel="noopener">Open ↗</a>
-      <button id="sheetClose" aria-label="Close">✕</button>
-    </header>
-    <div class="body" id="sheetBody"></div>
+  <div class="top">
+    <div class="brand">FeedTok</div>
+    <form class="feedform" id="feedform">
+      <input id="feedurl" type="url" placeholder="Paste an RSS / Atom feed URL" required>
+      <button type="submit">Load</button>
+    </form>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <main id="feed">
+    <div class="state">
+      <div>
+        <div class="spinner"></div>Loading feed…
+      </div>
+    </div>
+  </main>
+  <div class="progress" id="progress"></div>
 
-<svg width="0" height="0" style="position:absolute">
-  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
-  <symbol id="i-read" viewBox="0 0 24 24"><path d="M21 5c-1.1-.35-2.3-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></symbol>
-  <symbol id="i-save" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></symbol>
-  <symbol id="i-share" viewBox="0 0 24 24"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></symbol>
-</svg>
+  <div class="sheet-wrap" id="sheetWrap">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <header>
+        <h2 id="sheetTitle"></h2>
+        <a id="sheetLink" target="_blank" rel="noopener">Open ↗</a>
+        <button id="sheetClose" aria-label="Close">✕</button>
+      </header>
+      <div class="body" id="sheetBody"></div>
+    </div>
+  </div>
 
-<script>
-const DEFAULT_FEED = "https://bearblog.dev/discover/feed/";
-// Most feeds don't send CORS headers, so feeds are fetched through this RSS/Atom → JSON proxy.
-const PROXY = "https://rss2json.hlwsby.deno.net/?feed=";
+  <div class="toast" id="toast"></div>
 
-const $ = s => document.querySelector(s);
-const feedEl = $("#feed");
-const store = {
-  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
-};
-let liked = new Set(store.get("ft-liked", []));
-let saved = new Set(store.get("ft-saved", []));
-let items = [];
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="i-heart" viewBox="0 0 24 24">
+      <path
+        d="M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    </symbol>
+    <symbol id="i-read" viewBox="0 0 24 24">
+      <path
+        d="M21 5c-1.1-.35-2.3-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
+    </symbol>
+    <symbol id="i-save" viewBox="0 0 24 24">
+      <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+    </symbol>
+    <symbol id="i-share" viewBox="0 0 24 24">
+      <path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z" />
+    </symbol>
+  </svg>
 
-/* ---------- fetching & parsing ---------- */
-async function fetchFeed(url) {
-  let res;
-  try { res = await fetch(PROXY + encodeURIComponent(url), { signal: AbortSignal.timeout(20000) }); }
-  catch (e) { throw new Error(e.name === "TimeoutError" ? "Proxy timed out" : "Could not reach the proxy"); }
-  let j;
-  try { j = await res.json(); } catch { throw new Error("Proxy returned HTTP " + res.status); }
-  if (j.status !== "ok") throw new Error([j.message, j.details].filter(Boolean).join(" — ") || "Proxy error");
-  const list = (j.items || []).map(it => normalize({
-    id: it.id || it.guid || it.link, title: it.title, link: it.link,
-    html: it.content || it.description, author: it.author,
-    date: it.published || it.updated || it.pubDate,
-    cats: (it.categories || []).map(c => typeof c === "string" ? c : c?.term || c?.label || c?.name).filter(Boolean),
-    media: it.image || it.thumbnail || it.enclosure?.url,
-  }));
-  if (!list.length) throw new Error("No items found");
-  return { title: j.feed?.title || "Feed", items: list };
-}
+  <script>
+    const DEFAULT_FEED = "https://bearblog.dev/discover/feed/";
+    // Most feeds don't send CORS headers, so feeds are fetched through this RSS/Atom → JSON proxy.
+    const PROXY = "https://rss2json.hlwsby.deno.net/?feed=";
 
-function normalize({ id, title, link, html, author, date, cats, media }) {
-  const frag = new DOMParser().parseFromString(html || "", "text/html");
-  const plain = (frag.body.textContent || "").replace(/\s+/g, " ").trim();
-  let host = "";
-  try { host = new URL(link).hostname.replace(/^www\./, ""); } catch {}
-  return {
-    id: id || link || title,
-    title: title || "(untitled)",
-    link, html: html || "", plain, host,
-    img: media || frag.querySelector("img[src]")?.getAttribute("src") || "",
-    author: author && author !== "hidden" ? author : host.split(".")[0] || "unknown",
-    date: date ? new Date(date) : null,
-    cats: cats.slice(0, 4),
-    words: plain ? plain.split(" ").length : 0,
-  };
-}
+    const $ = s => document.querySelector(s);
+    const feedEl = $("#feed");
+    const store = {
+      get(k, d) {try {return JSON.parse(localStorage.getItem(k)) ?? d;} catch {return d;} },
+      set(k, v) {try {localStorage.setItem(k, JSON.stringify(v));} catch { } },
+    };
+    let liked = new Set(store.get("ft-liked", []));
+    let saved = new Set(store.get("ft-saved", []));
+    let items = [];
 
-/* ---------- rendering ---------- */
-function hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
-function gradient(seed) {
-  const h = hash(seed) % 360, h2 = (h + 40 + hash(seed + "x") % 80) % 360;
-  return `radial-gradient(circle at 20% 15%, hsl(${h} 75% 45%), transparent 60%),
+    /* ---------- fetching & parsing ---------- */
+    async function fetchFeed(url) {
+      let res;
+      try {res = await fetch(PROXY + encodeURIComponent(url), {signal: AbortSignal.timeout(20000)});}
+      catch (e) {throw new Error(e.name === "TimeoutError" ? "Proxy timed out" : "Could not reach the proxy");}
+      let j;
+      try {j = await res.json();} catch {throw new Error("Proxy returned HTTP " + res.status);}
+      if (j.status !== "ok") throw new Error([j.message, j.details].filter(Boolean).join(" — ") || "Proxy error");
+      const list = (j.items || []).map(it => normalize({
+        id: it.id || it.guid || it.link, title: it.title, link: it.link,
+        html: it.content || it.description, author: it.author,
+        date: it.published || it.updated || it.pubDate,
+        cats: (it.categories || []).map(c => typeof c === "string" ? c : c?.term || c?.label || c?.name).filter(Boolean),
+        media: it.image || it.thumbnail || it.enclosure?.url,
+      }));
+      if (!list.length) throw new Error("No items found");
+      return {title: j.feed?.title || "Feed", items: list};
+    }
+
+    function normalize({id, title, link, html, author, date, cats, media}) {
+      const frag = new DOMParser().parseFromString(html || "", "text/html");
+      const plain = (frag.body.textContent || "").replace(/\s+/g, " ").trim();
+      let host = "";
+      try {host = new URL(link).hostname.replace(/^www\./, "");} catch { }
+      return {
+        id: id || link || title,
+        title: title || "(untitled)",
+        link, html: html || "", plain, host,
+        img: media || frag.querySelector("img[src]")?.getAttribute("src") || "",
+        author: author && author !== "hidden" ? author : host.split(".")[0] || "unknown",
+        date: date ? new Date(date) : null,
+        cats: cats.slice(0, 4),
+        words: plain ? plain.split(" ").length : 0,
+      };
+    }
+
+    /* ---------- rendering ---------- */
+    function hash(s) {let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h);}
+    function gradient(seed) {
+      const h = hash(seed) % 360, h2 = (h + 40 + hash(seed + "x") % 80) % 360;
+      return `radial-gradient(circle at 20% 15%, hsl(${h} 75% 45%), transparent 60%),
           radial-gradient(circle at 85% 70%, hsl(${h2} 80% 40%), transparent 55%),
           linear-gradient(160deg, hsl(${h} 60% 18%), hsl(${h2} 60% 8%))`;
-}
-function ago(d) {
-  if (!d || isNaN(d)) return "";
-  const s = (Date.now() - d) / 1000;
-  for (const [n, u] of [[31536000,"y"],[2592000,"mo"],[604800,"w"],[86400,"d"],[3600,"h"],[60,"m"]])
-    if (s >= n) return Math.floor(s / n) + u + " ago";
-  return "just now";
-}
-const esc = s => s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const icon = id => `<svg><use href="#${id}"/></svg>`;
+    }
+    function ago(d) {
+      if (!d || isNaN(d)) return "";
+      const s = (Date.now() - d) / 1000;
+      for (const [n, u] of [[31536000, "y"], [2592000, "mo"], [604800, "w"], [86400, "d"], [3600, "h"], [60, "m"]])
+        if (s >= n) return Math.floor(s / n) + u + " ago";
+      return "just now";
+    }
+    const esc = s => s.replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+    const icon = id => `<svg><use href="#${id}"/></svg>`;
 
-function render() {
-  feedEl.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  items.forEach((it, i) => {
-    const card = document.createElement("section");
-    card.className = "card";
-    card.dataset.i = i;
-    const hue = hash(it.author) % 360;
-    const bgStyle = it.img ? `background-image:url('${esc(it.img)}')` : `background:${gradient(it.id)}`;
-    card.innerHTML = `
+    function render() {
+      feedEl.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      items.forEach((it, i) => {
+        const card = document.createElement("section");
+        card.className = "card";
+        card.dataset.i = i;
+        const hue = hash(it.author) % 360;
+        const bgStyle = it.img ? `background-image:url('${esc(it.img)}')` : `background:${gradient(it.id)}`;
+        card.innerHTML = `
       <div class="bg ${it.img ? "img" : ""}" style="${bgStyle}"></div>
       ${it.img ? "" : `<div class="bigtitle">${esc(it.title)}</div>`}
       <div class="info">
@@ -248,127 +683,128 @@ function render() {
         <button class="act ${saved.has(it.id) ? "saved" : ""}" data-act="save"><span class="ic">${icon("i-save")}</span><span>Save</span></button>
         <button class="act" data-act="share"><span class="ic">${icon("i-share")}</span><span>Share</span></button>
       </div>`;
-    frag.appendChild(card);
-  });
-  feedEl.appendChild(frag);
-  feedEl.scrollTop = 0;
+        frag.appendChild(card);
+      });
+      feedEl.appendChild(frag);
+      feedEl.scrollTop = 0;
 
-  const prog = $("#progress");
-  prog.innerHTML = items.length <= 40 ? items.map(() => "<i></i>").join("") : "";
-  observeCards();
+      const prog = $("#progress");
+      prog.innerHTML = items.length <= 40 ? items.map(() => "<i></i>").join("") : "";
+      observeCards();
 
-  if (!store.get("ft-hinted", false)) {
-    const h = document.createElement("div");
-    h.className = "hint"; h.textContent = "Swipe up ↑  ·  double-tap to like";
-    document.body.appendChild(h);
-    setTimeout(() => h.remove(), 5000);
-    store.set("ft-hinted", true);
-  }
-}
+      if (!store.get("ft-hinted", false)) {
+        const h = document.createElement("div");
+        h.className = "hint"; h.textContent = "Swipe up ↑  ·  double-tap to like";
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 5000);
+        store.set("ft-hinted", true);
+      }
+    }
 
-let current = 0;
-function observeCards() {
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        current = +e.target.dataset.i;
-        document.querySelectorAll("#progress i").forEach((d, j) => d.classList.toggle("on", j === current));
+    let current = 0;
+    function observeCards() {
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            current = +e.target.dataset.i;
+            document.querySelectorAll("#progress i").forEach((d, j) => d.classList.toggle("on", j === current));
+          }
+        });
+      }, {root: feedEl, threshold: 0.6});
+      feedEl.querySelectorAll(".card").forEach(c => io.observe(c));
+    }
+
+    /* ---------- interactions ---------- */
+    function toast(msg) {
+      const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+      clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 1600);
+    }
+    function toggle(set, key, id, btn, cls) {
+      set.has(id) ? set.delete(id) : set.add(id);
+      store.set(key, [...set]);
+      btn.classList.toggle(cls, set.has(id));
+      return set.has(id);
+    }
+    function heartPop(card, x, y) {
+      const r = card.getBoundingClientRect();
+      const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      s.setAttribute("class", "heart-pop"); s.setAttribute("viewBox", "0 0 24 24");
+      s.innerHTML = '<use href="#i-heart"/>';
+      s.style.left = (x - r.left) + "px"; s.style.top = (y - r.top) + "px";
+      card.appendChild(s); setTimeout(() => s.remove(), 800);
+    }
+
+    function openReader(it) {
+      $("#sheetTitle").textContent = it.title;
+      $("#sheetLink").href = it.link;
+      // Render the post's HTML in an inert document, strip scripts/handlers before inserting.
+      const doc = new DOMParser().parseFromString(it.html || `<p>${esc(it.plain)}</p>`, "text/html");
+      doc.querySelectorAll("script,style,iframe:not([src*='youtube']):not([src*='vimeo']),object,embed,form").forEach(n => n.remove());
+      doc.querySelectorAll("*").forEach(n => [...n.attributes].forEach(a => {
+        if (/^on/i.test(a.name) || /^\s*javascript:/i.test(a.value)) n.removeAttribute(a.name);
+      }));
+      doc.querySelectorAll("a").forEach(a => {a.target = "_blank"; a.rel = "noopener";});
+      doc.querySelectorAll("img").forEach(i => i.loading = "lazy");
+      $("#sheetBody").innerHTML = doc.body.innerHTML;
+      $("#sheetBody").scrollTop = 0;
+      $("#sheetWrap").classList.add("open");
+    }
+    function closeReader() {$("#sheetWrap").classList.remove("open");}
+
+    feedEl.addEventListener("click", async e => {
+      const card = e.target.closest(".card"); if (!card) return;
+      const it = items[+card.dataset.i];
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === "like") toggle(liked, "ft-liked", it.id, btn, "liked");
+      if (act === "save") toast(toggle(saved, "ft-saved", it.id, btn, "saved") ? "Saved" : "Removed from saved");
+      if (act === "read") openReader(it);
+      if (act === "share") {
+        if (navigator.share) {try {await navigator.share({title: it.title, url: it.link});} catch { } }
+        else {try {await navigator.clipboard.writeText(it.link); toast("Link copied");} catch {toast(it.link);} }
       }
     });
-  }, { root: feedEl, threshold: 0.6 });
-  feedEl.querySelectorAll(".card").forEach(c => io.observe(c));
-}
+    feedEl.addEventListener("dblclick", e => {
+      const card = e.target.closest(".card"); if (!card || e.target.closest("[data-act]")) return;
+      const it = items[+card.dataset.i];
+      heartPop(card, e.clientX, e.clientY);
+      if (!liked.has(it.id)) toggle(liked, "ft-liked", it.id, card.querySelector('[data-act="like"]'), "liked");
+    });
 
-/* ---------- interactions ---------- */
-function toast(msg) {
-  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 1600);
-}
-function toggle(set, key, id, btn, cls) {
-  set.has(id) ? set.delete(id) : set.add(id);
-  store.set(key, [...set]);
-  btn.classList.toggle(cls, set.has(id));
-  return set.has(id);
-}
-function heartPop(card, x, y) {
-  const r = card.getBoundingClientRect();
-  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  s.setAttribute("class", "heart-pop"); s.setAttribute("viewBox", "0 0 24 24");
-  s.innerHTML = '<use href="#i-heart"/>';
-  s.style.left = (x - r.left) + "px"; s.style.top = (y - r.top) + "px";
-  card.appendChild(s); setTimeout(() => s.remove(), 800);
-}
+    $("#sheetClose").onclick = closeReader;
+    $("#sheetWrap").addEventListener("click", e => {if (e.target.id === "sheetWrap") closeReader();});
 
-function openReader(it) {
-  $("#sheetTitle").textContent = it.title;
-  $("#sheetLink").href = it.link;
-  // Render the post's HTML in an inert document, strip scripts/handlers before inserting.
-  const doc = new DOMParser().parseFromString(it.html || `<p>${esc(it.plain)}</p>`, "text/html");
-  doc.querySelectorAll("script,style,iframe:not([src*='youtube']):not([src*='vimeo']),object,embed,form").forEach(n => n.remove());
-  doc.querySelectorAll("*").forEach(n => [...n.attributes].forEach(a => {
-    if (/^on/i.test(a.name) || /^\s*javascript:/i.test(a.value)) n.removeAttribute(a.name);
-  }));
-  doc.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
-  doc.querySelectorAll("img").forEach(i => i.loading = "lazy");
-  $("#sheetBody").innerHTML = doc.body.innerHTML;
-  $("#sheetBody").scrollTop = 0;
-  $("#sheetWrap").classList.add("open");
-}
-function closeReader() { $("#sheetWrap").classList.remove("open"); }
+    document.addEventListener("keydown", e => {
+      if (e.target.tagName === "INPUT") return;
+      const open = $("#sheetWrap").classList.contains("open");
+      if (e.key === "Escape") return closeReader();
+      if (open) return;
+      const go = i => feedEl.children[Math.max(0, Math.min(items.length - 1, i))]?.scrollIntoView({behavior: "smooth"});
+      if (["ArrowDown", "j", "PageDown", " "].includes(e.key)) {e.preventDefault(); go(current + 1);}
+      if (["ArrowUp", "k", "PageUp"].includes(e.key)) {e.preventDefault(); go(current - 1);}
+      if (e.key === "Enter" || e.key === "r") openReader(items[current]);
+      if (e.key === "l") feedEl.children[current]?.querySelector('[data-act="like"]').click();
+    });
 
-feedEl.addEventListener("click", async e => {
-  const card = e.target.closest(".card"); if (!card) return;
-  const it = items[+card.dataset.i];
-  const btn = e.target.closest("[data-act]");
-  if (!btn) return;
-  const act = btn.dataset.act;
-  if (act === "like") toggle(liked, "ft-liked", it.id, btn, "liked");
-  if (act === "save") toast(toggle(saved, "ft-saved", it.id, btn, "saved") ? "Saved" : "Removed from saved");
-  if (act === "read") openReader(it);
-  if (act === "share") {
-    if (navigator.share) { try { await navigator.share({ title: it.title, url: it.link }); } catch {} }
-    else { try { await navigator.clipboard.writeText(it.link); toast("Link copied"); } catch { toast(it.link); } }
-  }
-});
-feedEl.addEventListener("dblclick", e => {
-  const card = e.target.closest(".card"); if (!card || e.target.closest("[data-act]")) return;
-  const it = items[+card.dataset.i];
-  heartPop(card, e.clientX, e.clientY);
-  if (!liked.has(it.id)) toggle(liked, "ft-liked", it.id, card.querySelector('[data-act="like"]'), "liked");
-});
-
-$("#sheetClose").onclick = closeReader;
-$("#sheetWrap").addEventListener("click", e => { if (e.target.id === "sheetWrap") closeReader(); });
-
-document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT") return;
-  const open = $("#sheetWrap").classList.contains("open");
-  if (e.key === "Escape") return closeReader();
-  if (open) return;
-  const go = i => feedEl.children[Math.max(0, Math.min(items.length - 1, i))]?.scrollIntoView({ behavior: "smooth" });
-  if (["ArrowDown", "j", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(current + 1); }
-  if (["ArrowUp", "k", "PageUp"].includes(e.key)) { e.preventDefault(); go(current - 1); }
-  if (e.key === "Enter" || e.key === "r") openReader(items[current]);
-  if (e.key === "l") feedEl.children[current]?.querySelector('[data-act="like"]').click();
-});
-
-/* ---------- boot ---------- */
-async function load(url) {
-  $("#feedurl").value = url;
-  feedEl.innerHTML = `<div class="state"><div><div class="spinner"></div>Loading ${esc(url)}…</div></div>`;
-  try {
-    const { title, items: list } = await fetchFeed(url);
-    items = list;
-    document.title = title + " · FeedTok";
-    render();
-    try { const u = new URL(location.href); u.searchParams.set("feed", url); history.replaceState(null, "", u); } catch {}
-  } catch (err) {
-    feedEl.innerHTML = `<div class="state"><div>Couldn't load this feed.<br><small>${esc(String(err.message || err))}</small><br>
+    /* ---------- boot ---------- */
+    async function load(url) {
+      $("#feedurl").value = url;
+      feedEl.innerHTML = `<div class="state"><div><div class="spinner"></div>Loading ${esc(url)}…</div></div>`;
+      try {
+        const {title, items: list} = await fetchFeed(url);
+        items = list;
+        document.title = title + " · FeedTok";
+        render();
+        try {const u = new URL(location.href); u.searchParams.set("feed", url); history.replaceState(null, "", u);} catch { }
+      } catch (err) {
+        feedEl.innerHTML = `<div class="state"><div>Couldn't load this feed.<br><small>${esc(String(err.message || err))}</small><br>
       <button onclick="load('${esc(url).replace(/'/g, "\\'")}')">Try again</button></div></div>`;
-  }
-}
-$("#feedform").addEventListener("submit", e => { e.preventDefault(); load($("#feedurl").value.trim()); });
-load(new URLSearchParams(location.search).get("feed") || DEFAULT_FEED);
-</script>
+      }
+    }
+    $("#feedform").addEventListener("submit", e => {e.preventDefault(); load($("#feedurl").value.trim());});
+    load(new URLSearchParams(location.search).get("feed") || DEFAULT_FEED);
+  </script>
 </body>
+
 </html>
